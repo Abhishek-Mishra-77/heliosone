@@ -1,0 +1,77 @@
+-- First, get Matthew's department and organization details
+DO $$
+DECLARE
+  v_dept_id uuid;
+  v_org_id uuid;
+  v_template_id uuid;
+  v_admin_id uuid;
+  v_existing_assignment_id uuid;
+BEGIN
+  -- Get Matthew's department and org ID
+  SELECT d.id, d.organization_id INTO v_dept_id, v_org_id
+  FROM departments d
+  JOIN department_users du ON du.department_id = d.id
+  WHERE du.user_id = 'b06059d8-5613-4a38-a136-62533999193c'
+  AND d.department_type = 'department'
+  LIMIT 1;
+
+  IF v_dept_id IS NULL THEN
+    RAISE EXCEPTION 'IT department not found for Matthew';
+  END IF;
+
+  -- Get the organization admin (ashish@acm.com)
+  SELECT id INTO v_admin_id
+  FROM users 
+  WHERE organization_id = v_org_id
+  AND email = 'ashish@acm.com'
+  LIMIT 1;
+
+  IF v_admin_id IS NULL THEN
+    RAISE EXCEPTION 'Organization admin not found';
+  END IF;
+
+  -- Get the IT department template ID
+  SELECT id INTO v_template_id
+  FROM department_questionnaire_templates
+  WHERE name = 'IT Department Assessment'
+  AND department_type = 'department'
+  AND is_active = true
+  LIMIT 1;
+
+  IF v_template_id IS NULL THEN
+    RAISE EXCEPTION 'IT department template not found';
+  END IF;
+
+  -- Check for existing assignment
+  SELECT id INTO v_existing_assignment_id
+  FROM department_questionnaire_assignments
+  WHERE department_id = v_dept_id
+  AND template_id = v_template_id;
+
+  -- If an assignment exists, update it instead of creating a new one
+  IF v_existing_assignment_id IS NOT NULL THEN
+    UPDATE department_questionnaire_assignments
+    SET 
+      status = 'pending',
+      assigned_by = v_admin_id,
+      due_date = CURRENT_TIMESTAMP + INTERVAL '30 days',
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = v_existing_assignment_id;
+  ELSE
+    -- Create new assignment if none exists
+    INSERT INTO department_questionnaire_assignments (
+      template_id,
+      department_id,
+      assigned_by,
+      status,
+      due_date
+    ) VALUES (
+      v_template_id,
+      v_dept_id,
+      v_admin_id,
+      'pending',
+      CURRENT_TIMESTAMP + INTERVAL '30 days'
+    );
+  END IF;
+
+END $$;

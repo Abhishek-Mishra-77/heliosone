@@ -1,0 +1,3 @@
+The logo file should be placed in the public directory, but since it's a binary file, I cannot include it directly in the artifact. Please ensure the logo image is placed at:
+
+/home/project/public/helios-logo.png

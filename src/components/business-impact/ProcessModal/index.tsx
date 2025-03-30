@@ -1,0 +1,1 @@
+export { ProcessWizard as ProcessModal } from './ProcessWizard'

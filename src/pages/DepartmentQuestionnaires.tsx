@@ -1,0 +1,617 @@
+import React, { useState, useEffect } from 'react'
+import { 
+  ClipboardList,
+  Calendar,
+  Clock,
+  CheckCircle,
+  FileText,
+  Building2,
+  Save,
+  Info,
+  HelpCircle,
+  Upload
+} from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from '../lib/store'
+import { format } from 'date-fns'
+import clsx from 'clsx'
+
+interface QuestionnaireAssignment {
+  id: string
+  template_id: string
+  department_id: string
+  status: 'pending' | 'in_progress' | 'completed' | 'expired'
+  due_date: string
+  completed_at: string | null
+  template: {
+    name: string
+    description: string
+    department_type: string
+  }
+  department: {
+    name: string
+  }
+}
+
+interface QuestionnaireSection {
+  id: string
+  template_id: string
+  name: string
+  description: string
+  weight: number
+  order_index: number
+}
+
+interface Question {
+  id: string
+  section_id: string
+  question: string
+  description: string
+  type: 'boolean' | 'scale' | 'text' | 'date' | 'multi_choice'
+  options: any
+  weight: number
+  order_index: number
+  maturity_level: number
+  evidence_required: boolean
+  evidence_description: string | null
+  conditional_logic?: {
+    dependsOn?: string
+    condition?: string
+    value?: any
+    childQuestions?: Question[]
+  }
+}
+
+interface QuestionResponse {
+  value: string | number | boolean | null
+  evidence?: File[]
+}
+
+export function DepartmentQuestionnaires() {
+  const { profile } = useAuthStore()
+  const [assignments, setAssignments] = useState<QuestionnaireAssignment[]>([])
+  const [sections, setSections] = useState<Record<string, QuestionnaireSection[]>>({})
+  const [questions, setQuestions] = useState<Record<string, Question[]>>({})
+  const [responses, setResponses] = useState<Record<string, Record<string, QuestionResponse>>>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [activeAssignment, setActiveAssignment] = useState<QuestionnaireAssignment | null>(null)
+  const [activeSection, setActiveSection] = useState<QuestionnaireSection | null>(null)
+  const [showHelp, setShowHelp] = useState<string | null>(null)
+  const [progress, setProgress] = useState<{
+    total: number
+    completed: number
+    required: number
+    requiredCompleted: number
+  }>({ total: 0, completed: 0, required: 0, requiredCompleted: 0 })
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchAssignments()
+    }
+  }, [profile?.id])
+
+  async function fetchAssignments() {
+    try {
+      setLoading(true)
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .rpc('get_user_questionnaire_assignments', {
+          p_user_id: profile?.id
+        })
+
+      if (assignmentError) throw assignmentError
+      setAssignments(assignmentData || [])
+
+      for (const assignment of assignmentData || []) {
+        const { data: sectionData, error: sectionError } = await supabase
+          .from('department_questionnaire_sections')
+          .select('*')
+          .eq('template_id', assignment.template_id)
+          .order('order_index')
+
+        if (sectionError) throw sectionError
+        setSections(prev => ({
+          ...prev,
+          [assignment.template_id]: sectionData || []
+        }))
+
+        for (const section of sectionData || []) {
+          const { data: questionData, error: questionError } = await supabase
+            .from('department_questions')
+            .select('*')
+            .eq('section_id', section.id)
+            .order('order_index')
+
+          if (questionError) throw questionError
+          setQuestions(prev => ({
+            ...prev,
+            [section.id]: questionData || []
+          }))
+
+          const { data: responseData } = await supabase
+            .from('department_question_responses')
+            .select('*')
+            .eq('department_assessment_id', assignment.id)
+
+          if (responseData) {
+            setResponses(prev => ({
+              ...prev,
+              [assignment.id]: responseData.reduce((acc, response) => ({
+                ...acc,
+                [response.question_id]: {
+                  value: response.response.value,
+                  evidence: response.evidence_links || []
+                }
+              }), {})
+            }))
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error)
+      window.toast?.error('Failed to fetch assignments')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calculateProgress = (assignmentId: string) => {
+    const assignmentResponses = responses[assignmentId] || {}
+    const allQuestions = sections[assignments.find(a => a.id === assignmentId)?.template_id || '']
+      ?.flatMap(section => questions[section.id] || []) || []
+
+    const total = allQuestions.length
+    const completed = Object.keys(assignmentResponses).length
+    const required = allQuestions.filter(q => q.evidence_required).length
+    const requiredCompleted = allQuestions
+      .filter(q => q.evidence_required)
+      .filter(q => assignmentResponses[q.id]?.value !== undefined).length
+
+    setProgress({ total, completed, required, requiredCompleted })
+  }
+
+  const startAssessment = async (assignment: QuestionnaireAssignment) => {
+    try {
+      const { error } = await supabase
+        .from('department_questionnaire_assignments')
+        .update({ 
+          status: 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', assignment.id)
+
+      if (error) throw error
+
+      setAssignments(prev => prev.map(a => 
+        a.id === assignment.id ? { ...a, status: 'in_progress' } : a
+      ))
+      setActiveAssignment(assignment)
+      setActiveSection(sections[assignment.template_id]?.[0] || null)
+      calculateProgress(assignment.id)
+
+      window.toast?.success('Assessment started')
+    } catch (error) {
+      console.error('Error starting assessment:', error)
+      window.toast?.error('Failed to start assessment')
+    }
+  }
+
+  const submitAssessment = async () => {
+    if (!activeAssignment) return
+
+    try {
+      setSaving(true)
+      const assignmentResponses = responses[activeAssignment.id] || {}
+      const allQuestions = sections[activeAssignment.template_id]
+        ?.flatMap(section => questions[section.id] || []) || []
+
+      const missingRequired = allQuestions.some(question => {
+        const response = assignmentResponses[question.id]
+        return !response?.value && question.evidence_required
+      })
+
+      if (missingRequired) {
+        window.toast?.error('Please answer all required questions')
+        return
+      }
+
+      const { error: responseError } = await supabase
+        .from('department_question_responses')
+        .upsert(
+          Object.entries(assignmentResponses).map(([questionId, response]) => ({
+            department_assessment_id: activeAssignment.id,
+            question_id: questionId,
+            response: { value: response.value },
+            evidence_links: response.evidence || [],
+            created_by: profile?.id
+          }))
+        )
+
+      if (responseError) throw responseError
+
+      const { error: assignmentError } = await supabase
+        .from('department_questionnaire_assignments')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', activeAssignment.id)
+
+      if (assignmentError) throw assignmentError
+
+      setAssignments(prev => prev.map(a => 
+        a.id === activeAssignment.id ? { 
+          ...a, 
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        } : a
+      ))
+
+      setActiveAssignment(null)
+      setActiveSection(null)
+      window.toast?.success('Assessment submitted successfully')
+    } catch (error) {
+      console.error('Error submitting assessment:', error)
+      window.toast?.error('Failed to submit assessment')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleResponseChange = (questionId: string, value: any, evidence?: File[]) => {
+    if (!activeAssignment) return
+
+    setResponses(prev => ({
+      ...prev,
+      [activeAssignment.id]: {
+        ...prev[activeAssignment.id],
+        [questionId]: {
+          value,
+          evidence: evidence || prev[activeAssignment.id]?.[questionId]?.evidence
+        }
+      }
+    }))
+
+    calculateProgress(activeAssignment.id)
+  }
+
+  const renderAssignmentList = () => (
+    <div className="space-y-4">
+      {assignments.map(assignment => (
+        <div key={assignment.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:border-indigo-300 transition-colors">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {assignment.template.name}
+                </h3>
+                <span className={clsx(
+                  "ml-2 px-2 py-1 text-xs font-medium rounded-full",
+                  {
+                    'bg-yellow-100 text-yellow-800': assignment.status === 'pending',
+                    'bg-blue-100 text-blue-800': assignment.status === 'in_progress',
+                    'bg-green-100 text-green-800': assignment.status === 'completed',
+                    'bg-red-100 text-red-800': assignment.status === 'expired'
+                  }
+                )}>
+                  {assignment.status.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 mt-1">
+                <Calendar className="w-4 h-4 mr-1" />
+                Due {format(new Date(assignment.due_date), 'MMM d, yyyy')}
+                <span className="mx-2">•</span>
+                Department: {assignment.department.name}
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                {assignment.template.description}
+              </p>
+            </div>
+            {assignment.status === 'pending' && (
+              <button 
+                onClick={() => startAssessment(assignment)}
+                className="btn-primary"
+              >
+                Start Assessment
+              </button>
+            )}
+            {assignment.status === 'in_progress' && (
+              <button 
+                onClick={() => setActiveAssignment(assignment)}
+                className="btn-primary"
+              >
+                Continue Assessment
+              </button>
+            )}
+            {assignment.status === 'completed' && (
+              <div className="flex items-center text-green-600">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Completed
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderAssessment = () => {
+    if (!activeAssignment || !activeSection) return null
+
+    const sectionQuestions = questions[activeSection.id] || []
+    const currentSectionIndex = sections[activeAssignment.template_id]?.findIndex(s => s.id === activeSection.id) || 0
+    const totalSections = sections[activeAssignment.template_id]?.length || 0
+    const isLastSection = currentSectionIndex === totalSections - 1
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{activeAssignment.template.name}</h2>
+            <p className="mt-1 text-gray-600">Section {currentSectionIndex + 1} of {totalSections}: {activeSection.name}</p>
+          </div>
+          <button
+            onClick={() => {
+              setActiveAssignment(null)
+              setActiveSection(null)
+            }}
+            className="btn-secondary"
+          >
+            Back to Assignments
+          </button>
+        </div>
+
+        {/* Progress */}
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+            <span>Overall Progress</span>
+            <span>{Math.round((progress.completed / progress.total) * 100)}%</span>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-indigo-600 transition-all duration-300"
+              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>{progress.completed} of {progress.total} questions answered</span>
+            <span>{progress.requiredCompleted} of {progress.required} required questions completed</span>
+          </div>
+        </div>
+
+        {/* Questions */}
+        <div className="space-y-6">
+          {sectionQuestions.map(question => (
+            <div key={question.id} className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <span className="font-medium text-gray-900">
+                      {question.question}
+                    </span>
+                    {question.evidence_required && (
+                      <span className="ml-2 text-xs text-red-500">*</span>
+                    )}
+                    <button
+                      onClick={() => setShowHelp(showHelp === question.id ? null : question.id)}
+                      className="ml-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {showHelp === question.id && (
+                    <div className="mt-2 p-4 bg-indigo-50 rounded-lg">
+                      <div className="flex items-start">
+                        <Info className="w-5 h-5 text-indigo-600 mt-0.5 mr-2" />
+                        <div>
+                          <h4 className="text-sm font-medium text-indigo-900">Guidance</h4>
+                          <p className="mt-1 text-sm text-indigo-800">{question.description}</p>
+                          {question.evidence_required && (
+                            <div className="mt-2">
+                              <h5 className="text-sm font-medium text-indigo-900">Required Evidence</h5>
+                              <p className="text-sm text-indigo-800">{question.evidence_description}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    {question.type === 'boolean' && (
+                      <div className="flex space-x-4">
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name={`question_${question.id}`}
+                            value="true"
+                            checked={responses[activeAssignment.id]?.[question.id]?.value === true}
+                            onChange={() => handleResponseChange(question.id, true)}
+                            className="form-radio text-indigo-600"
+                          />
+                          <span className="ml-2">Yes</span>
+                        </label>
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name={`question_${question.id}`}
+                            value="false"
+                            checked={responses[activeAssignment.id]?.[question.id]?.value === false}
+                            onChange={() => handleResponseChange(question.id, false)}
+                            className="form-radio text-indigo-600"
+                          />
+                          <span className="ml-2">No</span>
+                        </label>
+                      </div>
+                    )}
+
+                    {question.type === 'scale' && (
+                      <input
+                        type="range"
+                        min={question.options?.min || 0}
+                        max={question.options?.max || 5}
+                        step={question.options?.step || 1}
+                        value={responses[activeAssignment.id]?.[question.id]?.value || 0}
+                        onChange={(e) => handleResponseChange(question.id, parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                    )}
+
+                    {question.type === 'multi_choice' && (
+                      <select 
+                        className="input"
+                        value={responses[activeAssignment.id]?.[question.id]?.value || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                      >
+                        <option value="">Select an option</option>
+                        {question.options?.options?.map((option: string) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {question.type === 'text' && (
+                      <textarea
+                        className="input"
+                        rows={3}
+                        placeholder="Enter your response..."
+                        value={responses[activeAssignment.id]?.[question.id]?.value || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                      />
+                    )}
+
+                    {question.type === 'date' && (
+                      <input
+                        type="date"
+                        className="input"
+                        value={responses[activeAssignment.id]?.[question.id]?.value || ''}
+                        onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                      />
+                    )}
+
+                    {question.evidence_required && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Supporting Evidence
+                        </label>
+                        <input
+                          type="file"
+                          className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-indigo-50 file:text-indigo-700
+                            hover:file:bg-indigo-100"
+                          onChange={(e) => {
+                            const files = e.target.files
+                            if (files) {
+                              handleResponseChange(
+                                question.id,
+                                responses[activeAssignment.id]?.[question.id]?.value,
+                                Array.from(files)
+                              )
+                            }
+                          }}
+                          multiple
+                        />
+                        {question.evidence_description && (
+                          <p className="mt-1 text-sm text-gray-500">
+                            {question.evidence_description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between pt-6 border-t border-gray-200">
+          <button
+            onClick={() => {
+              const prevSection = sections[activeAssignment.template_id]?.[currentSectionIndex - 1]
+              if (prevSection) {
+                setActiveSection(prevSection)
+              }
+            }}
+            className="btn-secondary"
+            disabled={currentSectionIndex === 0}
+          >
+            Previous Section
+          </button>
+          
+          {isLastSection ? (
+            <button
+              onClick={submitAssessment}
+              disabled={saving}
+              className="btn-primary"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              {saving ? 'Submitting...' : 'Submit Assessment'}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                const nextSection = sections[activeAssignment.template_id]?.[currentSectionIndex + 1]
+                if (nextSection) {
+                  setActiveSection(nextSection)
+                }
+              }}
+              className="btn-primary"
+            >
+              Next Section
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading assessments...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (assignments.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="text-center py-12">
+          <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Department Assignments</h3>
+          <p className="text-gray-600">You are not currently assigned to any departments.</p>
+          <p className="text-gray-600">Please contact your administrator to get department access.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center mb-6">
+          <ClipboardList className="w-8 h-8 text-indigo-600 mr-3" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Department Assessments</h1>
+            <p className="mt-1 text-gray-600">Complete your assigned department questionnaires</p>
+          </div>
+        </div>
+
+        {activeAssignment ? renderAssessment() : renderAssignmentList()}
+      </div>
+    </div>
+  )
+}
