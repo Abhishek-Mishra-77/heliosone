@@ -361,8 +361,6 @@ export function ResiliencyScoring() {
     }
   };
 
-  console.log(responses);
-
   const startNewAssessment = async () => {
     try {
       setLoading(true);
@@ -658,6 +656,8 @@ export function ResiliencyScoring() {
           responses={responses}
           onCategorySelect={setActiveCategory}
         /> */}
+
+          {console.log(questions[activeCategory.id])}
 
           {activeCategory && questions[activeCategory.id] && (
             <div className="space-y-6">
