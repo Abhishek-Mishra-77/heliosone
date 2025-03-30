@@ -117,6 +117,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ],
       };
     }
+
+    
     if (location.pathname.startsWith("/risk-assessment")) {
       return { items: RISK_ASSESSMENT };
     }
@@ -131,6 +133,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       window.location.href = "/bcdr/department-assessments";
     }
   }, [location.pathname, isOrgAdmin, isPlatformAdmin]);
+
+
+  console.log(nav)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
