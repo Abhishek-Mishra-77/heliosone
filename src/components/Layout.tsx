@@ -33,11 +33,11 @@ const ADMIN_ASSESSMENTS = [
   { name: "Resiliency Scoring", href: "/bcdr/scoring", icon: Target },
   { name: "Gap Analysis", href: "/bcdr/gap-analysis", icon: GitCompare },
   { name: "Maturity Assessment", href: "/bcdr/maturity", icon: BarChart3 },
-  {
-    name: "Business Impact Analysis",
-    href: "/bcdr/business-impact",
-    icon: FileSearch,
-  },
+  // {
+  //   name: "Business Impact Analysis",
+  //   href: "/bcdr/business-impact",
+  //   icon: FileSearch,
+  // },
 ];
 
 const DEPARTMENT_MANAGEMENT = [
