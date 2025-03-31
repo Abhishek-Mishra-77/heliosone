@@ -201,9 +201,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         const isActive = location.pathname === item.href;
                         return (
                           <div key={item.name}>
-                            <div
-                              className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer"
-                              onClick={() => toggleSubmenu(category.name)} // Toggle submenu on click
+                            <Link to={item.href}
+                              className={clsx(
+                                "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
+                                isActive
+                                  ? "bg-[#FF6634]/10 text-[#FF6634]"
+                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              )}
+                              onClick={() => {
+                                toggleSubmenu(category.name)
+                              }}
                             >
                               <Icon className="w-5 h-5 mr-3" />
                               {item.name}
@@ -217,7 +224,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                   )}
                                 </span>
                               )}
-                            </div>
+                            </Link>
                             {/* Render submenu if open */}
                             {category.isSubmenu && openCategory === category.name && category.subMenuItems && (
                               <div className="pl-6 space-y-1">

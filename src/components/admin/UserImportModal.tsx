@@ -185,9 +185,8 @@ export function UserImportModal({ show, onClose, onComplete }: UserImportModalPr
                   {results.map((result, index) => (
                     <div
                       key={index}
-                      className={`flex items-center p-2 rounded-lg ${
-                        result.success ? 'bg-green-50' : 'bg-red-50'
-                      }`}
+                      className={`flex items-center p-2 rounded-lg ${result.success ? 'bg-green-50' : 'bg-red-50'
+                        }`}
                     >
                       {result.success ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
@@ -197,9 +196,8 @@ export function UserImportModal({ show, onClose, onComplete }: UserImportModalPr
                       <span className="ml-2 text-sm font-medium">
                         {result.email}
                       </span>
-                      <span className={`ml-2 text-sm ${
-                        result.success ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={`ml-2 text-sm ${result.success ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {result.message}
                       </span>
                     </div>
