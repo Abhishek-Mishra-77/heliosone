@@ -128,6 +128,7 @@ export function ResiliencyScoring() {
 
   useEffect(() => {
     if (organization?.id) {
+  
       fetchAssessmentData();
     }
   }, [organization?.id]);
@@ -360,6 +361,7 @@ export function ResiliencyScoring() {
       setLoading(false);
     }
   };
+
 
   const startNewAssessment = async () => {
     try {

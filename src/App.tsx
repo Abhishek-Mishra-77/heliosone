@@ -36,7 +36,7 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
-        
+
         {/* Protected routes */}
         <Route
           path="/*"
@@ -46,7 +46,7 @@ function App() {
                 <Routes>
                   {/* Default route - shows either Platform Dashboard or Continuous Resilience based on role */}
                   <Route path="/dashboard" element={<ContinuousResilience />} />
-                  
+
                   {/* BCDR Module Routes */}
                   <Route path="/bcdr" element={<BCDRDashboard />} />
                   <Route path="/bcdr/scoring" element={<ResiliencyScoring />} />
@@ -66,7 +66,7 @@ function App() {
                   <Route path="/risk-assessment/table" element={<RiskTable />} />
                   <Route path="/risk-assessment/trends" element={<RiskTrends />} />
 
-                  
+
                   {/* Admin Routes */}
                   <Route path="/admin" element={<PlatformDashboard />} />
                   <Route path="/admin/organizations" element={<AdminOrganizations />} />

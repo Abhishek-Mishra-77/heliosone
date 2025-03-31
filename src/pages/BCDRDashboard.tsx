@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Shield, 
-  Server, 
-  FileText, 
-  BookOpen, 
+import {
+  Shield,
+  Server,
+  FileText,
+  BookOpen,
   Truck,
   ArrowUpRight,
   Building2,
@@ -17,6 +17,9 @@ import {
 import { useAuthStore } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import clsx from 'clsx'
+import ResiliencyScoring from './ResiliencyScoring';
+import { MaturityAnalysis } from '../components/assessment-analysis/MaturityAnalysis';
+import GapAnalysis from './GapAnalysis';
 
 const MODULES = [
   {
@@ -93,6 +96,7 @@ export function BCDRDashboard() {
 
   useEffect(() => {
     if (organization?.id) {
+      fetchQuestionsData1()
       fetchDashboardStats()
     }
   }, [organization?.id])
@@ -139,6 +143,33 @@ export function BCDRDashboard() {
     }
   }
 
+  const fetchQuestionsData1 = async () => {
+    try {
+      // Fetch the questions directly from the 'resiliency_questions' table
+      const { data: ResiliencyQuestions, error: questionError1 } = await supabase
+        .from("resiliency_questions")
+        .select("*")
+        .order("order_index");
+
+      const { data: MaturityQuestions, error: questionError2 } = await supabase
+        .from("maturity_assessment_questions")
+        .select("*")
+        .order("maturity_level", { ascending: true })
+        .order("order_index");
+
+      const { data: GapAnalysisQuestions, error: questionError3 } = await supabase
+        .from("gap_analysis_questions")
+        .select("*")
+        .order("order_index");
+      // Set the questions state
+      // console.log(ResiliencyQuestions , " ResiliencyQuestions")
+      // console.log(MaturityQuestions , " MaturityQuestions")
+      console.log(GapAnalysisQuestions, " GapAnalysisQuestions")
+    } catch (error) {
+      console.error("Error fetching questions data:", error);
+    };
+  }
+
   const handleModuleClick = (moduleId: string, route: string) => {
     navigate(route)
   }
@@ -165,7 +196,7 @@ export function BCDRDashboard() {
             <div>
               <h3 className="text-sm font-medium text-gray-900">Getting Started</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Complete the assessments to determine your organization's resilience score. 
+                Complete the assessments to determine your organization's resilience score.
                 Start with Maturity Assessment, Gap Analysis, and Business Impact Analysis.
               </p>
             </div>
@@ -198,11 +229,11 @@ export function BCDRDashboard() {
               Last Assessment
             </div>
             <div className="text-2xl font-bold text-gray-900">
-              {loading ? '-' : stats.lastAssessment ? 
-                new Date(stats.lastAssessment).toLocaleDateString(undefined, { 
-                  month: 'short', 
-                  day: 'numeric' 
-                }) : 
+              {loading ? '-' : stats.lastAssessment ?
+                new Date(stats.lastAssessment).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric'
+                }) :
                 '-'
               }
             </div>
@@ -220,7 +251,7 @@ export function BCDRDashboard() {
                 disabled={!module.active}
                 className={clsx(
                   "text-left p-6 rounded-lg border-2 transition-all duration-200",
-                  module.active 
+                  module.active
                     ? "border-gray-200 hover:border-indigo-500 hover:shadow-md bg-white"
                     : "border-gray-200 opacity-75 cursor-not-allowed"
                 )}
@@ -235,7 +266,7 @@ export function BCDRDashboard() {
                   )}
                 </div>
                 <p className="text-sm text-gray-600 mb-4">{module.description}</p>
-                
+
                 {module.stats ? (
                   <div className="mt-4 flex items-center justify-between">
                     <div>
