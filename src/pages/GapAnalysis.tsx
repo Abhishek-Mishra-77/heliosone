@@ -131,97 +131,13 @@ export function GapAnalysis() {
       if (categories?.length > 0) {
         setActiveCategory(categories[0]);
 
-        for (const category of categories) {
-          const { data: questionData, error: questionError } = await supabase
-            .from("gap_analysis_questions")
-            .select("*")
-            .eq("category_id", category.id)
-            .order("order_index");
+        const { data: questionData, error: questionError } = await supabase
+          .from("gap_analysis_questions")
+          .select("*")
+          .order("order_index");
 
-          if (questionError) throw questionError;
-
-          const questionsWithLogic = questionData?.map((q) => {
-            switch (category.name) {
-              case "Program Management":
-                if (
-                  q.question.includes("committee meets") ||
-                  q.question.includes("governance oversight")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find((dq) =>
-                        dq.question.includes("formal BCDR steering committee")
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Risk and Impact Analysis":
-                if (
-                  q.question.includes("risk treatment") ||
-                  q.question.includes("risk monitoring")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find((dq) =>
-                        dq.question.includes("formal risk assessment process")
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Strategy and Planning":
-                if (
-                  q.question.includes("strategy review") ||
-                  q.question.includes("strategy validation")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find((dq) =>
-                        dq.question.includes("recovery strategies documented")
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Testing and Maintenance":
-                if (
-                  q.question.includes("test coverage") ||
-                  q.question.includes("test results")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find((dq) =>
-                        dq.question.includes("formal test program")
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-            }
-            return q;
-          });
-
-          setQuestions((prev) => ({
-            ...prev,
-            [category.id]: questionsWithLogic || [],
-          }));
-        }
+        if (questionError) throw questionError;
+        setQuestions(questionData);
       }
     } catch (error) {
       console.error("Error fetching gap analysis data:", error);
@@ -491,31 +407,29 @@ export function GapAnalysis() {
           onCategorySelect={setActiveCategory}
         /> */}
 
-          {activeCategory && questions[activeCategory.id] && (
-            <div className="space-y-6">
-              {questions[activeCategory.id].map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  response={responses[question.id]}
-                  allResponses={responses}
-                  showHelp={showHelp === question.id}
-                  showStandard={showStandard === question.id}
-                  onToggleHelp={() =>
-                    setShowHelp(showHelp === question.id ? null : question.id)
-                  }
-                  onToggleStandard={() =>
-                    setShowStandard(
-                      showStandard === question.id ? null : question.id
-                    )
-                  }
-                  onResponseChange={(value, evidence) =>
-                    handleResponseChange(question.id, value, evidence)
-                  }
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-6">
+            {questions?.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                response={responses[question.id]}
+                allResponses={responses}
+                showHelp={showHelp === question.id}
+                showStandard={showStandard === question.id}
+                onToggleHelp={() =>
+                  setShowHelp(showHelp === question.id ? null : question.id)
+                }
+                onToggleStandard={() =>
+                  setShowStandard(
+                    showStandard === question.id ? null : question.id
+                  )
+                }
+                onResponseChange={(value, evidence) =>
+                  handleResponseChange(question.id, value, evidence)
+                }
+              />
+            ))}
+          </div>
         </div>
         <Navigation
           currentIndex={categories.indexOf(activeCategory)}

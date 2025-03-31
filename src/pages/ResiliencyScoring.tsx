@@ -128,7 +128,6 @@ export function ResiliencyScoring() {
 
   useEffect(() => {
     if (organization?.id) {
-  
       fetchAssessmentData();
     }
   }, [organization?.id]);
@@ -160,196 +159,15 @@ export function ResiliencyScoring() {
       if (categories?.length > 0) {
         setActiveCategory(categories[0]);
 
-        for (const category of categories) {
-          const { data: questionData, error: questionError } = await supabase
-            .from("resiliency_questions")
-            .select("*")
-            .eq("category_id", category.id)
-            .order("order_index");
+        const { data: questionData, error: questionError } = await supabase
+          .from("resiliency_questions")
+          .select("*")
+          .order("order_index");
 
-          if (questionError) throw questionError;
+        if (questionError) throw questionError;
 
-          const questionsWithLogic = questionData?.map((q) => {
-            switch (category.name) {
-              case "Leadership and Governance":
-                if (
-                  q.question === "How often does the steering committee meet?"
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Is there a formal BCDR steering committee?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                if (q.question === "How often is the BCDR policy reviewed?") {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question === "Is there a documented BCDR policy?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Risk Management":
-                if (
-                  q.question.includes("risk treatment") ||
-                  q.question.includes("risk monitoring")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have a formal risk assessment methodology?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Business Impact Analysis":
-                if (
-                  q.question.includes("impact criteria") ||
-                  q.question.includes("dependency mapping")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have a formal BIA methodology?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Incident Response":
-                if (
-                  q.question.includes("incident classification") ||
-                  q.question.includes("response time")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have documented incident response procedures?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Recovery Strategy":
-                if (
-                  q.question.includes("recovery strategy") ||
-                  q.question.includes("strategy review")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question === "Are recovery strategies documented?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Plan Development":
-                if (
-                  q.question.includes("plan review") ||
-                  q.question.includes("plan distribution")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have standardized plan templates?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Training and Awareness":
-                if (
-                  q.question.includes("training frequency") ||
-                  q.question.includes("training effectiveness")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have a formal training program?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-
-              case "Exercise Program":
-                if (
-                  q.question.includes("exercise type") ||
-                  q.question.includes("exercise frequency")
-                ) {
-                  return {
-                    ...q,
-                    conditional_logic: {
-                      dependsOn: questionData.find(
-                        (dq) =>
-                          dq.question ===
-                          "Do you have a formal exercise program?"
-                      )?.id,
-                      condition: "equals",
-                      value: true,
-                    },
-                  };
-                }
-                break;
-            }
-            return q;
-          });
-
-          setQuestions((prev) => ({
-            ...prev,
-            [category.id]: questionsWithLogic || [],
-          }));
-        }
+        setQuestions(questionData);
+        console.log(questionData)
       }
     } catch (error) {
       console.error("Error fetching assessment data:", error);
@@ -362,6 +180,8 @@ export function ResiliencyScoring() {
     }
   };
 
+
+  console.log(questions)
 
   const startNewAssessment = async () => {
     try {
@@ -659,33 +479,29 @@ export function ResiliencyScoring() {
           onCategorySelect={setActiveCategory}
         /> */}
 
-          {console.log(questions[activeCategory.id])}
-
-          {activeCategory && questions[activeCategory.id] && (
-            <div className="space-y-6">
-              {questions[activeCategory.id].map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  response={responses[question.id]}
-                  allResponses={responses}
-                  showHelp={showHelp === question.id}
-                  showStandard={showStandard === question.id}
-                  onToggleHelp={() =>
-                    setShowHelp(showHelp === question.id ? null : question.id)
-                  }
-                  onToggleStandard={() =>
-                    setShowStandard(
-                      showStandard === question.id ? null : question.id
-                    )
-                  }
-                  onResponseChange={(value, evidence) =>
-                    handleResponseChange(question.id, value, evidence)
-                  }
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-6">
+            {questions?.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                response={responses[question.id]}
+                allResponses={responses}
+                showHelp={showHelp === question.id}
+                showStandard={showStandard === question.id}
+                onToggleHelp={() =>
+                  setShowHelp(showHelp === question.id ? null : question.id)
+                }
+                onToggleStandard={() =>
+                  setShowStandard(
+                    showStandard === question.id ? null : question.id
+                  )
+                }
+                onResponseChange={(value, evidence) =>
+                  handleResponseChange(question.id, value, evidence)
+                }
+              />
+            ))}
+          </div>
         </div>
 
         <Navigation

@@ -123,20 +123,14 @@ export function MaturityAssessment() {
       if (categories?.length > 0) {
         setActiveCategory(categories[0]);
 
-        for (const category of categories) {
-          const { data: questionData, error: questionError } = await supabase
-            .from("maturity_assessment_questions")
-            .select("*")
-            .eq("category_id", category.id)
-            .order("maturity_level", { ascending: true })
-            .order("order_index");
+        const { data: questionData, error: questionError } = await supabase
+          .from("maturity_assessment_questions")
+          .select("*")
+          .order("maturity_level", { ascending: true })
+          .order("order_index");
 
-          if (questionError) throw questionError;
-          setQuestions((prev) => ({
-            ...prev,
-            [category.id]: questionData || [],
-          }));
-        }
+        if (questionError) throw questionError;
+        setQuestions(questionData);
       }
     } catch (error) {
       console.error("Error fetching assessment data:", error);
@@ -396,31 +390,29 @@ export function MaturityAssessment() {
           onCategorySelect={setActiveCategory}
         /> */}
 
-          {activeCategory && questions[activeCategory.id] && (
-            <div className="space-y-6">
-              {questions[activeCategory.id].map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  response={responses[question.id]}
-                  allResponses={responses}
-                  showHelp={showHelp === question.id}
-                  showStandard={showStandard === question.id}
-                  onToggleHelp={() =>
-                    setShowHelp(showHelp === question.id ? null : question.id)
-                  }
-                  onToggleStandard={() =>
-                    setShowStandard(
-                      showStandard === question.id ? null : question.id
-                    )
-                  }
-                  onResponseChange={(value, evidence) =>
-                    handleResponseChange(question.id, value, evidence)
-                  }
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-6">
+            {questions?.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                response={responses[question.id]}
+                allResponses={responses}
+                showHelp={showHelp === question.id}
+                showStandard={showStandard === question.id}
+                onToggleHelp={() =>
+                  setShowHelp(showHelp === question.id ? null : question.id)
+                }
+                onToggleStandard={() =>
+                  setShowStandard(
+                    showStandard === question.id ? null : question.id
+                  )
+                }
+                onResponseChange={(value, evidence) =>
+                  handleResponseChange(question.id, value, evidence)
+                }
+              />
+            ))}
+          </div>
         </div>
 
         <Navigation
