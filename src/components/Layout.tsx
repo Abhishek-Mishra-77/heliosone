@@ -18,11 +18,15 @@ import {
   Lightbulb,
   PieChart,
   Shield,
+  Copy,
   FileText,
+  ChevronDown
 } from "lucide-react";
+
 import { useAuthStore } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import clsx from "clsx";
+import { sub } from "date-fns";
 
 // Define navigation categories
 const ADMIN_ASSESSMENTS = [
@@ -86,6 +90,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isPlatformAdmin = profile?.role === "super_admin";
   const isOrgAdmin = profile?.role === "admin";
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [openCategory, setOpenCategory] = useState(null); // State to track the open category
+
 
   // Get role display text
   const getRoleDisplay = () => {
@@ -104,13 +110,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         categories: [
           {
             name: "Organization Assessments",
-            items: ADMIN_ASSESSMENTS,
+            items: [{ name: "BCDR", href: "/bcdr", icon: Copy }],
+            isSubmenu: true,
+            subMenuItems: ADMIN_ASSESSMENTS,
             visible: isOrgAdmin,
           },
           // { name: 'Department Management', items: DEPARTMENT_MANAGEMENT, visible: isOrgAdmin },
           {
             name: "Analysis & Reports",
             items: ANALYSIS_REPORTS,
+            isSubmenu: false,
             visible: isOrgAdmin,
           },
           // { name: 'Plan Builders', items: PLAN_BUILDERS, visible: isOrgAdmin }
@@ -118,7 +127,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       };
     }
 
-    
+
     if (location.pathname.startsWith("/risk-assessment")) {
       return { items: RISK_ASSESSMENT };
     }
@@ -135,7 +144,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [location.pathname, isOrgAdmin, isPlatformAdmin]);
 
 
-  console.log(nav)
+  const toggleSubmenu = (categoryName) => {
+    setOpenCategory((prev) => (prev === categoryName ? null : categoryName)); // Toggle submenu visibility
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -152,7 +164,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <img src="/helios-logo.png" alt="Helios" className="h-8 w-auto" />
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
             {"items" in nav ? (
               <div className="space-y-1">
@@ -189,22 +200,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.href;
                         return (
-                          <Link
-                            key={item.name}
-                            to={item.href}
-                            className={clsx(
-                              "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
-                              isActive
-                                ? "bg-[#FF6634]/10 text-[#FF6634]"
-                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          <div key={item.name}>
+                            <div
+                              className="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer"
+                              onClick={() => toggleSubmenu(category.name)} // Toggle submenu on click
+                            >
+                              <Icon className="w-5 h-5 mr-3" />
+                              {item.name}
+                              {/* Display dropdown icon when the main section is clicked */}
+                              {category.isSubmenu && (
+                                <span className="ml-auto">
+                                  {openCategory === category.name ? (
+                                    <ChevronDown className="w-4 h-4" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                            {/* Render submenu if open */}
+                            {category.isSubmenu && openCategory === category.name && category.subMenuItems && (
+                              <div className="pl-6 space-y-1">
+                                {category.subMenuItems.map((subItem) => {
+                                  const SubIcon = subItem.icon;
+                                  const isSubActive = location.pathname === subItem.href;
+                                  return (
+                                    <Link
+                                      key={subItem.name}
+                                      to={subItem.href}
+                                      className={clsx(
+                                        "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
+                                        isSubActive
+                                          ? "bg-[#FF6634]/10 text-[#FF6634]"
+                                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                      )}
+                                    >
+                                      <SubIcon className="w-5 h-5 mr-3" />
+                                      {subItem.name}
+                                      {isSubActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
                             )}
-                          >
-                            <Icon className="w-5 h-5 mr-3" />
-                            {item.name}
-                            {isActive && (
-                              <ChevronRight className="w-4 h-4 ml-auto" />
-                            )}
-                          </Link>
+                          </div>
                         );
                       })}
                     </div>
@@ -212,7 +251,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               )
             )}
           </nav>
-
           {/* User Profile */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex flex-col space-y-3">
