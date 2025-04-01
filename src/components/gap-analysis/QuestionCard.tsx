@@ -84,7 +84,6 @@ export function QuestionCard({
               <span className="font-medium text-gray-900">
                 {question.question}
               </span>
-
               <button
                 onClick={() => {
                   onToggleStandard()

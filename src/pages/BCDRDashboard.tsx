@@ -306,7 +306,6 @@ export function BCDRDashboard() {
 
         {/* Render the selected assessment dynamically */}
         {renderAssessmentComponent()}
-
       </div>
     </div>
   )
