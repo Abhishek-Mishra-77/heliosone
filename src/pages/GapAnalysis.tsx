@@ -57,10 +57,12 @@ interface GapQuestion {
 interface GapQuestions {
   questions: GapQuestion[];
 }
+
 interface QuestionResponse {
   value: any;
   evidence?: File[];
 }
+
 
 const INDUSTRY_STANDARDS = [
   {
@@ -101,7 +103,7 @@ export function GapAnalysis({ questions }: { questions: GapQuestions['questions'
     saveProgress,
   } = useAssessmentProgress("gap");
 
-  console.log(questions)
+  console.log(responses)
 
   // useEffect(() => {
   //   if (organization?.id) {
@@ -362,61 +364,50 @@ export function GapAnalysis({ questions }: { questions: GapQuestions['questions'
     );
   }
 
+
+  console.log(activeCategory + " dasdasd");
+
   return (
     <div className="space-y-6">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
+
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gap Analysis</h1>
-            <p className="mt-1 text-gray-600">
-              Identify and assess gaps in your BCDR program based on industry
-              standards
+            <div className="flex gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">Gap Analysis</h2>
+              {INDUSTRY_STANDARDS.map((standard) => (
+                <a
+                  key={standard.name}
+                  href={standard.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-blue-300 transition-colors  hover:bg-blue-50"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-full hover:bg-blue-300 transition-colors">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-sm text-gray-900">
+                      {standard.name}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <p className="mt-2 text-gray-600 text-sm">
+              Identify and assess gaps in your BCDR program based on industry standards
             </p>
           </div>
+
           <SaveProgressButton
             onClick={() => saveProgress(responses, activeCategory?.id)}
             saving={savingProgress}
             lastSaved={savedProgress?.lastUpdated}
           />
         </div>
+
+
         <div className="border p-4 rounded-2xl shadow-lg">
-          <div className=" p-2 mb-6">
-            <div className="flex items-start">
-              <BookOpen className="w-5 h-5 text-gray-600 mt-0.5 mr-3" />
-              <div className="flex justify-center align-center gap-8">
-                <h2 className="text-md font-medium text-gray-900">
-                  Industry Standards Reference
-                </h2>
-                <div className="flex gap-4">
-                  {INDUSTRY_STANDARDS.map((standard) => (
-                    <a
-                      key={standard.name}
-                      href={standard.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-gray-300 transition-colors p-1"
-                    >
-                      <Shield className="w-5 h-5 text-gray-500 mr-2" />
-                      <div>
-                        <div className="font-sm text-gray-900">
-                          {standard.name}
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* <CategorySelector
-          categories={categories}
-          activeCategory={activeCategory}
-          questions={questions}
-          responses={responses}
-          onCategorySelect={setActiveCategory}
-        /> */}
-
           <div className="space-y-6">
             {questions?.map((question) => (
               <QuestionCard

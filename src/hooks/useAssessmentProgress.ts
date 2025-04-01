@@ -68,6 +68,7 @@ export function useAssessmentProgress(assessmentType: 'resiliency' | 'gap' | 'ma
     responses: Record<string, any>,
     activeCategory: string | null
   ) => {
+
     try {
       if (!organization?.id || !profile?.id) {
         throw new Error('Organization or user data not available')

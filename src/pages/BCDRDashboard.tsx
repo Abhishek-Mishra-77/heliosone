@@ -221,10 +221,6 @@ export function BCDRDashboard() {
     }
   };
 
-
-  console.log(questions)
-
-
   return (
     <div className="space-y-6">
       {/* Organization Overview */}
@@ -253,9 +249,6 @@ export function BCDRDashboard() {
             <h2 className="text-2xl font-bold text-gray-900">
               BCDR Assessment
             </h2>
-            {/* <p className="mt-1 text-gray-600">
-              {organization?.name}
-            </p> */}
             <p>Review and analyze assessements results across all BCDR domains</p>
           </div>
         </div>
@@ -289,7 +282,7 @@ export function BCDRDashboard() {
           </div>
         </div>
 
-        <div className='flex justify-center items-center mt-10'>
+        <div className='flex justify-center items-center mt-5'>
           <div className='text-center p-6 bg-white '>
             <h1 className='text-2xl font-bold text-gray-900 mb-4'>Gap Analysis</h1>
             <p className='text-md text-gray-600 mb-6'>
