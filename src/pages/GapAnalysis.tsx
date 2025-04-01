@@ -371,7 +371,6 @@ export function GapAnalysis({ questions }: { questions: GapQuestions['questions'
     <div className="space-y-6">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-
           <div>
             <div className="flex gap-4">
               <h2 className="text-2xl font-bold text-gray-900">Gap Analysis</h2>
@@ -405,7 +404,6 @@ export function GapAnalysis({ questions }: { questions: GapQuestions['questions'
             lastSaved={savedProgress?.lastUpdated}
           />
         </div>
-
 
         <div className="border p-4 rounded-2xl shadow-lg">
           <div className="space-y-6">

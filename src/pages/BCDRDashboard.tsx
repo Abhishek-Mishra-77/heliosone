@@ -221,6 +221,8 @@ export function BCDRDashboard() {
     }
   };
 
+  console.log(questions)
+
   return (
     <div className="space-y-6">
       {/* Organization Overview */}
@@ -289,7 +291,7 @@ export function BCDRDashboard() {
               Identify and assess gaps in your BCDR program based on industry standards.
             </p>
             <button
-              onClick={() => handleStartAssessment('gap')}
+              onClick={() => handleStartAssessment('scoring')}
               className='bg-blue-500 text-white px-6 py-3 rounded-md text-sm font-medium shadow-md hover:bg-blue-600 transition duration-300'>
               Get Started
             </button>

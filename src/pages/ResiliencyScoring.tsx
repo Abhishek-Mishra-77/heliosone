@@ -70,17 +70,15 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function ResiliencyScoring() {
+export function ResiliencyScoring({ questions }: ResiliencyQuestion) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [questions, setQuestions] = useState<
-    Record<string, ResiliencyQuestion[]>
-  >({});
+
   const [responses, setResponses] = useState<Record<string, QuestionResponse>>(
     {}
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>(null);
@@ -126,59 +124,59 @@ export function ResiliencyScoring() {
     return Math.round((answeredQuestions / allQuestions.length) * 100);
   };
 
-  useEffect(() => {
-    if (organization?.id) {
-      fetchAssessmentData();
-    }
-  }, [organization?.id]);
+  // useEffect(() => {
+  //   if (organization?.id) {
+  //     fetchAssessmentData();
+  //   }
+  // }, [organization?.id]);
 
-  const fetchAssessmentData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // const fetchAssessmentData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
 
-      // Check for existing assessment
-      const { data: assessment } = await supabase
-        .from("bcdr_assessments")
-        .select("*")
-        .eq("organization_id", organization?.id)
-        .eq("bcdr_assessment_type", "resiliency")
-        .eq("status", "completed")
-        .maybeSingle();
+  //     // Check for existing assessment
+  //     const { data: assessment } = await supabase
+  //       .from("bcdr_assessments")
+  //       .select("*")
+  //       .eq("organization_id", organization?.id)
+  //       .eq("bcdr_assessment_type", "resiliency")
+  //       .eq("status", "completed")
+  //       .maybeSingle();
 
-      setExistingAssessment(assessment);
+  //     setExistingAssessment(assessment);
 
-      const { data: categories, error: categoriesError } = await supabase
-        .from("resiliency_categories")
-        .select("*")
-        .order("order_index");
+  //     const { data: categories, error: categoriesError } = await supabase
+  //       .from("resiliency_categories")
+  //       .select("*")
+  //       .order("order_index");
 
-      if (categoriesError) throw categoriesError;
-      setCategories(categories || []);
+  //     if (categoriesError) throw categoriesError;
+  //     setCategories(categories || []);
 
-      if (categories?.length > 0) {
-        setActiveCategory(categories[0]);
+  //     if (categories?.length > 0) {
+  //       setActiveCategory(categories[0]);
 
-        const { data: questionData, error: questionError } = await supabase
-          .from("resiliency_questions")
-          .select("*")
-          .order("order_index");
+  //       const { data: questionData, error: questionError } = await supabase
+  //         .from("resiliency_questions")
+  //         .select("*")
+  //         .order("order_index");
 
-        if (questionError) throw questionError;
+  //       if (questionError) throw questionError;
 
-        setQuestions(questionData);
-        console.log(questionData)
-      }
-    } catch (error) {
-      console.error("Error fetching assessment data:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to load assessment"
-      );
-      window.toast?.error("Failed to load assessment");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //       setQuestions(questionData);
+  //       console.log(questionData)
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching assessment data:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to load assessment"
+  //     );
+  //     window.toast?.error("Failed to load assessment");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
 
   console.log(questions)
@@ -392,52 +390,45 @@ export function ResiliencyScoring() {
   return (
     <div className="space-y-6">
       <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Resiliency Scoring
-            </h1>
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Resiliency Scoring
+              </h1>
+              {INDUSTRY_STANDARDS.map((standard) => (
+                <a
+                  key={standard.name}
+                  href={standard.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-blue-300 transition-colors hover:bg-blue-50"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-full hover:bg-blue-300 transition-colors">
+                    <Shield className="w-3 h-3 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-sm text-gray-900">{standard.name}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
             <p className="mt-1 text-gray-600">
-              Evaluate your organization's resilience capabilities based on
-              industry standards
+              Evaluate your organization's resilience capabilities based on industry standards.
             </p>
           </div>
-          <SaveProgressButton
-            onClick={() => saveProgress(responses, activeCategory?.id)}
-            saving={savingProgress}
-            lastSaved={savedProgress?.lastUpdated}
-          />
+
+          {/* Save Progress Button Section */}
+          <div className="flex flex-col items-end">
+            <SaveProgressButton
+              onClick={() => saveProgress(responses, activeCategory?.id)}
+              saving={savingProgress}
+              lastSaved={savedProgress?.lastUpdated}
+            />
+          </div>
         </div>
 
         <div className="border-2 border-gray-100 p-4 rounded-2xl shadow-lg">
-          <div className=" p-2 mb-6">
-            <div className="flex items-start">
-              <BookOpen className="w-5 h-5 text-gray-600 mt-0.5 mr-3" />
-              <div className="flex justify-center align-center gap-8">
-                <h2 className="text-md font-medium text-gray-900">
-                  Industry Standards Reference
-                </h2>
-                <div className="flex gap-4">
-                  {INDUSTRY_STANDARDS.map((standard) => (
-                    <a
-                      key={standard.name}
-                      href={standard.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-gray-300 transition-colors p-1"
-                    >
-                      <Shield className="w-5 h-5 text-gray-500 mr-2" />
-                      <div>
-                        <div className="font-sm text-gray-900">
-                          {standard.name}
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
@@ -470,14 +461,6 @@ export function ResiliencyScoring() {
               </div>
             </div>
           </div>
-
-          {/* <CategorySelector
-          categories={categories}
-          activeCategory={activeCategory}
-          questions={questions}
-          responses={responses}
-          onCategorySelect={setActiveCategory}
-        /> */}
 
           <div className="space-y-6">
             {questions?.map((question) => (

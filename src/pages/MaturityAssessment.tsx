@@ -61,17 +61,14 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function MaturityAssessment({ questions: initialQuestions }: any) {
+export function MaturityAssessment({ questions }: MaturityQuestion) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [questions, setQuestions] = useState<
-    Record<string, MaturityQuestion[]>
-  >({});
   const [responses, setResponses] = useState<Record<string, QuestionResponse>>(
     {}
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>(null);
@@ -85,63 +82,63 @@ export function MaturityAssessment({ questions: initialQuestions }: any) {
     saveProgress,
   } = useAssessmentProgress("maturity");
 
-  useEffect(() => {
-    if (organization?.id) {
-      fetchAssessmentData();
-    }
-  }, [organization?.id]);
+  // useEffect(() => {
+  //   if (organization?.id) {
+  //     fetchAssessmentData();
+  //   }
+  // }, [organization?.id]);
 
-  const fetchAssessmentData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // const fetchAssessmentData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
 
-      // Check for existing assessment
-      const { data: assessment, error: assessmentError } = await supabase
-        .from("bcdr_assessments")
-        .select("*")
-        .eq("organization_id", organization?.id)
-        .eq("bcdr_assessment_type", "maturity")
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .maybeSingle();
+  //     // Check for existing assessment
+  //     const { data: assessment, error: assessmentError } = await supabase
+  //       .from("bcdr_assessments")
+  //       .select("*")
+  //       .eq("organization_id", organization?.id)
+  //       .eq("bcdr_assessment_type", "maturity")
+  //       .eq("status", "completed")
+  //       .order("created_at", { ascending: false })
+  //       .maybeSingle();
 
-      if (assessmentError && assessmentError.code !== "PGRST116") {
-        throw assessmentError;
-      }
+  //     if (assessmentError && assessmentError.code !== "PGRST116") {
+  //       throw assessmentError;
+  //     }
 
-      setExistingAssessment(assessment);
+  //     setExistingAssessment(assessment);
 
-      const { data: categories, error: categoriesError } = await supabase
-        .from("maturity_assessment_categories")
-        .select("*")
-        .order("order_index");
+  //     const { data: categories, error: categoriesError } = await supabase
+  //       .from("maturity_assessment_categories")
+  //       .select("*")
+  //       .order("order_index");
 
-      if (categoriesError) throw categoriesError;
-      setCategories(categories || []);
+  //     if (categoriesError) throw categoriesError;
+  //     setCategories(categories || []);
 
-      if (categories?.length > 0) {
-        setActiveCategory(categories[0]);
+  //     if (categories?.length > 0) {
+  //       setActiveCategory(categories[0]);
 
-        const { data: questionData, error: questionError } = await supabase
-          .from("maturity_assessment_questions")
-          .select("*")
-          .order("maturity_level", { ascending: true })
-          .order("order_index");
+  //       const { data: questionData, error: questionError } = await supabase
+  //         .from("maturity_assessment_questions")
+  //         .select("*")
+  //         .order("maturity_level", { ascending: true })
+  //         .order("order_index");
 
-        if (questionError) throw questionError;
-        setQuestions(questionData);
-      }
-    } catch (error) {
-      console.error("Error fetching assessment data:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to load assessment"
-      );
-      window.toast?.error("Failed to load assessment");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //       if (questionError) throw questionError;
+  //       setQuestions(questionData);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching assessment data:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to load assessment"
+  //     );
+  //     window.toast?.error("Failed to load assessment");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const startNewAssessment = async () => {
     try {
@@ -338,9 +335,29 @@ export function MaturityAssessment({ questions: initialQuestions }: any) {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Maturity Assessment
-            </h1>
+            <div className="flex gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Maturity Assessment
+              </h1>
+              {INDUSTRY_STANDARDS.map((standard) => (
+                <a
+                  key={standard.name}
+                  href={standard.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-blue-300 transition-colors  hover:bg-blue-50"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-full hover:bg-blue-300 transition-colors">
+                    <Shield className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-sm text-gray-900">
+                      {standard.name}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
             <p className="mt-1 text-gray-600">
               Evaluate your BCDR program capabilities based on industry
               standards
@@ -352,43 +369,7 @@ export function MaturityAssessment({ questions: initialQuestions }: any) {
             lastSaved={savedProgress?.lastUpdated}
           />
         </div>
-        <div className="border border-2 p-4 rounded-2xl shadow-lg">
-          <div className=" p-2 mb-6">
-            <div className="flex items-start">
-              <BookOpen className="w-5 h-5 text-gray-600 mt-0.5 mr-3" />
-              <div className="flex justify-center align-center gap-8">
-                <h2 className="text-md font-medium text-gray-900">
-                  Industry Standards Reference
-                </h2>
-                <div className="flex gap-4">
-                  {INDUSTRY_STANDARDS.map((standard) => (
-                    <a
-                      key={standard.name}
-                      href={standard.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start text-sm bg-gray-100 rounded-3xl border border-blue-100 hover:border-gray-300 transition-colors p-1"
-                    >
-                      <Shield className="w-5 h-5 text-gray-500 mr-2" />
-                      <div>
-                        <div className="font-sm text-gray-900">
-                          {standard.name}
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* <CategorySelector
-          categories={categories}
-          activeCategory={activeCategory}
-          questions={questions}
-          responses={responses}
-          onCategorySelect={setActiveCategory}
-        /> */}
+        <div className="border p-4 rounded-2xl shadow-lg">
 
           <div className="space-y-6">
             {questions?.map((question) => (
