@@ -148,6 +148,37 @@ export function MaturityAssessment({ questions, updateProgress, setIsActive, set
   //   }
   // };
 
+
+  const calculateOverallProgress = () => {
+    const allQuestions = Object.values(questions).flat();
+    if (allQuestions.length === 0) return 0;
+    const answeredQuestions = allQuestions.filter((q) => {
+      if (q.conditional_logic) {
+        const dependentResponse =
+          responses[q.conditional_logic.dependsOn]?.value;
+        if (dependentResponse === undefined) return false;
+
+        switch (q.conditional_logic.condition) {
+          case "equals":
+            if (dependentResponse !== q.conditional_logic.value) return false;
+            break;
+          case "not_equals":
+            if (dependentResponse === q.conditional_logic.value) return false;
+            break;
+          case "greater_than":
+            if (dependentResponse <= q.conditional_logic.value) return false;
+            break;
+          case "less_than":
+            if (dependentResponse >= q.conditional_logic.value) return false;
+            break;
+        }
+      }
+
+      return responses[q.id]?.value !== undefined;
+    }).length;
+    return Math.round((answeredQuestions / allQuestions.length) * 100);
+  };
+
   const startNewAssessment = async () => {
     try {
       setLoading(true);
@@ -278,6 +309,8 @@ export function MaturityAssessment({ questions, updateProgress, setIsActive, set
     }
   };
 
+  const overallProgress = calculateOverallProgress();
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -312,6 +345,7 @@ export function MaturityAssessment({ questions, updateProgress, setIsActive, set
       </div>
     );
   }
+
 
   if (existingAssessment) {
     return (
@@ -381,6 +415,65 @@ export function MaturityAssessment({ questions, updateProgress, setIsActive, set
             lastSaved={savedProgress?.lastUpdated}
           />
         </div>
+
+        <div className="border-2 border-gray-100 p-4 rounded-2xl shadow-lg">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Target className="w-5 h-5 text-indigo-600 mr-2" />
+                <span className="font-medium text-gray-900">
+                  Assessment Progress
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Info className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-500">
+                  Complete all sections to generate your resilience score
+                </span>
+              </div>
+            </div>
+            <div className="relative pt-1">
+              <div className="flex mb-2 items-center justify-between">
+                <div>
+                  <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
+                    {overallProgress}% Complete
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
+                <div
+                  style={{ width: `${overallProgress}%` }}
+                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {questions?.map((question) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                response={responses[question.id]}
+                allResponses={responses}
+                showHelp={showHelp === question.id}
+                showStandard={showStandard === question.id}
+                onToggleHelp={() =>
+                  setShowHelp(showHelp === question.id ? null : question.id)
+                }
+                onToggleStandard={() =>
+                  setShowStandard(
+                    showStandard === question.id ? null : question.id
+                  )
+                }
+                onResponseChange={(value, evidence) =>
+                  handleResponseChange(question.id, value, evidence)
+                }
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="border p-4 rounded-2xl shadow-lg">
 
           <div className="space-y-6">

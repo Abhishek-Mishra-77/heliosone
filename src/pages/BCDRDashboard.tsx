@@ -12,7 +12,8 @@ import {
   Activity,
   TrendingUp,
   Info,
-  BarChart3
+  BarChart3,
+  CircleCheck
 } from 'lucide-react'
 import { useAuthStore } from '../lib/store'
 import { supabase } from '../lib/supabase'
@@ -208,9 +209,9 @@ export function BCDRDashboard() {
       });
 
       setProgress({
-        scoring: { total: scoringQuestions?.length || 0, completed: 0, status: false },
-        gap: { total: gapQuestions?.length || 0, completed: 0, status: false },
-        maturity: { total: maturityQuestions?.length || 0, completed: 0, status: false },
+        scoring: { total: ResiliencyQuestions?.length || 0, completed: 0, status: false },
+        gap: { total: GapAnalysisQuestions?.length || 0, completed: 0, status: false },
+        maturity: { total: MaturityQuestions?.length || 0, completed: 0, status: false },
       });
 
     } catch (error) {
@@ -316,6 +317,7 @@ export function BCDRDashboard() {
                   >
                     {i + 1}
                   </span>
+
                   <span className="hidden sm:block"> {assessment.name} </span>
                 </li>
               ))}

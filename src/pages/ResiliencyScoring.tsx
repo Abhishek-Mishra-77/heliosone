@@ -104,7 +104,6 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
   const calculateOverallProgress = () => {
     const allQuestions = Object.values(questions).flat();
     if (allQuestions.length === 0) return 0;
-
     const answeredQuestions = allQuestions.filter((q) => {
       if (q.conditional_logic) {
         const dependentResponse =
@@ -129,7 +128,6 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
 
       return responses[q.id]?.value !== undefined;
     }).length;
-
     return Math.round((answeredQuestions / allQuestions.length) * 100);
   };
 
@@ -327,6 +325,8 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
     }
   };
 
+  const overallProgress = calculateOverallProgress();
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -362,6 +362,7 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
     );
   }
 
+
   if (existingAssessment) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
@@ -391,7 +392,7 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
     );
   }
 
-  const overallProgress = calculateOverallProgress();
+
 
   return (
     <div className="space-y-6">
@@ -435,7 +436,6 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive, setA
         </div>
 
         <div className="border-2 border-gray-100 p-4 rounded-2xl shadow-lg">
-
           <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
