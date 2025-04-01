@@ -57,7 +57,9 @@ interface GapQuestion {
 interface GapAnalysisProps {
   questions: GapQuestion[],
   updateProgress: (completed: number, total: number) => void,
-  setIsActive: React.Dispatch<React.SetStateAction<boolean>>
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>,
+  setAssessmentIndex: React.Dispatch<React.SetStateAction<number>>,
+  setActiveAssessment: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 interface QuestionResponse {
@@ -85,7 +87,7 @@ const INDUSTRY_STANDARDS = [
 ];
 
 
-export function GapAnalysis({ questions, updateProgress , setIsActive }: GapAnalysisProps) {
+export function GapAnalysis({ questions, updateProgress, setIsActive, setAssessmentIndex , setActiveAssessment }: GapAnalysisProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
@@ -105,8 +107,6 @@ export function GapAnalysis({ questions, updateProgress , setIsActive }: GapAnal
     saving: savingProgress,
     saveProgress,
   } = useAssessmentProgress("gap");
-
-  console.log(responses)
 
   // useEffect(() => {
   //   if (organization?.id) {
@@ -219,12 +219,11 @@ export function GapAnalysis({ questions, updateProgress , setIsActive }: GapAnal
 
       return newResponses;
     });
-
-    updateProgress('gap', Object.keys(responses).length)
-
+    updateProgress('gap', Object.keys(responses).length, false)
   };
 
   const saveAssessment = async () => {
+    console.log('responses', responses)
     if (!organization?.id || !profile?.id) {
       window.toast?.error("Organization or user data not available");
       return;
@@ -297,7 +296,11 @@ export function GapAnalysis({ questions, updateProgress , setIsActive }: GapAnal
       if (responsesError) throw responsesError;
 
       await handleAssessmentComplete(organization.id, "gap");
-      navigate("/bcdr/assessment-analysis");
+      updateProgress('gap', Object.keys(responses).length, true)
+      setIsActive(false);
+      setAssessmentIndex(1);
+      setActiveAssessment(null)
+      // navigate("/bcdr/assessment-analysis");
     } catch (error) {
       console.error("Error saving assessment:", error);
       window.toast?.error("Failed to save assessment");
@@ -369,9 +372,6 @@ export function GapAnalysis({ questions, updateProgress , setIsActive }: GapAnal
       </div>
     );
   }
-
-
-  console.log(activeCategory + " dasdasd");
 
   return (
     <div className="space-y-6">

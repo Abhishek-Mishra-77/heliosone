@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../lib/store'
 import { supabase } from '../lib/supabase'
-import clsx from 'clsx'
 import { ResiliencyScoring } from '../pages/ResiliencyScoring'
 import { GapAnalysis } from '../pages/GapAnalysis'
 import { MaturityAssessment } from '../pages/MaturityAssessment'
@@ -24,6 +23,7 @@ import { MaturityAssessment } from '../pages/MaturityAssessment'
 interface AssessmentProgress {
   total: number;
   completed: number;
+  status: boolean
 }
 
 
@@ -125,10 +125,11 @@ export function BCDRDashboard() {
     maturity: []
   })
   const [progress, setProgress] = useState<{ [key: string]: AssessmentProgress }>({
-    scoring: { total: 0, completed: 0 },
-    gap: { total: 0, completed: 0 },
-    maturity: { total: 0, completed: 0 }
+    scoring: { total: 0, completed: 0, status: false },
+    gap: { total: 0, completed: 0, status: false },
+    maturity: { total: 0, completed: 0, status: false }
   });
+
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true)
 
@@ -207,9 +208,9 @@ export function BCDRDashboard() {
       });
 
       setProgress({
-        scoring: { total: scoringQuestions?.length || 0, completed: 0 },
-        gap: { total: gapQuestions?.length || 0, completed: 0 },
-        maturity: { total: maturityQuestions?.length || 0, completed: 0 }
+        scoring: { total: scoringQuestions?.length || 0, completed: 0, status: false },
+        gap: { total: gapQuestions?.length || 0, completed: 0, status: false },
+        maturity: { total: maturityQuestions?.length || 0, completed: 0, status: false },
       });
 
     } catch (error) {
@@ -226,12 +227,13 @@ export function BCDRDashboard() {
   };
 
   // Update progress when a question is answered
-  const updateProgress = (assessmentId: string, completedCount: number) => {
+  const updateProgress = (assessmentId: string, completedCount: number, status: boolean) => {
     setProgress((prev) => ({
       ...prev,
       [assessmentId]: {
         ...prev[assessmentId],
-        completed: completedCount
+        completed: completedCount,
+        status
       }
     }));
   };
@@ -243,24 +245,29 @@ export function BCDRDashboard() {
           questions={questions.gap}
           updateProgress={updateProgress}
           setIsActive={setIsActive}
+          setAssessmentIndex={setAssessmentIndex}
+          setActiveAssessment={setActiveAssessment}
         />;
       case 'maturity':
         return <MaturityAssessment
           questions={questions.maturity}
           updateProgress={updateProgress}
           setIsActive={setIsActive}
+          setAssessmentIndex={setAssessmentIndex}
+          setActiveAssessment={setActiveAssessment}
         />;
       case 'scoring':
         return <ResiliencyScoring
           questions={questions.scoring}
           updateProgress={updateProgress}
           setIsActive={setIsActive}
+          setAssessmentIndex={setAssessmentIndex}
+          setActiveAssessment={setActiveAssessment}
         />;
       default:
-        return null; // Default to no component if none is selected
+        return null;
     }
   };
-
 
   return (
     <div className="space-y-6">

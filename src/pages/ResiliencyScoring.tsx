@@ -51,7 +51,9 @@ interface ResiliencyQuestion {
 interface resiliencyAssessmentProps {
   questions: MaturityQuestion[],
   updateProgress: (completed: number, total: number) => void,
-  setIsActive: React.Dispatch<React.SetStateAction<boolean>>
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>,
+  setAssessmentIndex: React.Dispatch<React.SetStateAction<number>>,
+  setActiveAssessment: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 
@@ -78,11 +80,10 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function ResiliencyScoring({ questions, updateProgress, setIsActive }: resiliencyAssessmentProps) {
+export function ResiliencyScoring({ questions, updateProgress, setIsActive, setAssessmentIndex, setActiveAssessment }: resiliencyAssessmentProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-
   const [responses, setResponses] = useState<Record<string, QuestionResponse>>(
     {}
   );
@@ -185,9 +186,6 @@ export function ResiliencyScoring({ questions, updateProgress, setIsActive }: re
   //     setLoading(false);
   //   }
   // };
-
-
-  console.log(questions)
 
   const startNewAssessment = async () => {
     try {

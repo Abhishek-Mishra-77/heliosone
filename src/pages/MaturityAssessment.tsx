@@ -41,7 +41,9 @@ interface MaturityQuestion {
 interface maturityAssessmentProps {
   questions: MaturityQuestion[],
   updateProgress: (completed: number, total: number) => void,
-  setIsActive: React.Dispatch<React.SetStateAction<boolean>>
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>,
+  setAssessmentIndex: React.Dispatch<React.SetStateAction<number>>,
+  setActiveAssessment: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 interface QuestionResponse {
@@ -67,7 +69,7 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function MaturityAssessment({ questions, updateProgress, setIsActive }: maturityAssessmentProps) {
+export function MaturityAssessment({ questions, updateProgress, setIsActive, setAssessmentIndex, setActiveAssessment }: maturityAssessmentProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
@@ -263,7 +265,11 @@ export function MaturityAssessment({ questions, updateProgress, setIsActive }: m
       if (responsesError) throw responsesError;
 
       await handleAssessmentComplete(organization.id, "maturity");
-      navigate("/bcdr/assessment-analysis");
+      updateProgress('maturity', Object.keys(responses).length, true)
+      setIsActive(false);
+      setAssessmentIndex(2);
+      setActiveAssessment(null)
+      // navigate("/bcdr/assessment-analysis");
     } catch (error) {
       console.error("Error saving assessment:", error);
       window.toast?.error("Failed to save assessment");

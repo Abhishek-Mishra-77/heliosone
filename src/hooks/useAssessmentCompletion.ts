@@ -20,15 +20,15 @@ export function useAssessmentCompletion() {
   }
 
   const handleAssessmentComplete = async (
-    organizationId: string, 
+    organizationId: string,
     assessmentType: string,
     onComplete?: () => void
   ) => {
     const hasCompleted = await checkPreviousAssessment(organizationId, assessmentType)
-    
+
     if (hasCompleted) {
       window.toast?.error('An assessment has already been completed. Please wait for the next assessment period.')
-      navigate('/bcdr/assessment-analysis')
+      // navigate('/bcdr/assessment-analysis')
       return
     }
 
