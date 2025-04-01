@@ -38,6 +38,12 @@ interface MaturityQuestion {
   };
 }
 
+interface maturityAssessmentProps {
+  questions: MaturityQuestion[],
+  updateProgress: (completed: number, total: number) => void,
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>
+}
+
 interface QuestionResponse {
   value: any;
   evidence?: File[];
@@ -61,7 +67,7 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function MaturityAssessment({ questions }: MaturityQuestion) {
+export function MaturityAssessment({ questions, updateProgress, setIsActive }: maturityAssessmentProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);

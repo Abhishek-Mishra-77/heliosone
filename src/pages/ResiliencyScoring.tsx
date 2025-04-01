@@ -47,6 +47,14 @@ interface ResiliencyQuestion {
   };
 }
 
+
+interface resiliencyAssessmentProps {
+  questions: MaturityQuestion[],
+  updateProgress: (completed: number, total: number) => void,
+  setIsActive: React.Dispatch<React.SetStateAction<boolean>>
+}
+
+
 interface QuestionResponse {
   value: any;
   evidence?: File[];
@@ -70,7 +78,7 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function ResiliencyScoring({ questions }: ResiliencyQuestion) {
+export function ResiliencyScoring({ questions, updateProgress, setIsActive }: resiliencyAssessmentProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);

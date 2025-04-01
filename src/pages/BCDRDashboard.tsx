@@ -118,6 +118,7 @@ export function BCDRDashboard() {
     lastAssessment: null
   })
   const [assessmentIndex, setAssessmentIndex] = useState<number>(0)
+  const [isActive, setIsActive] = useState<boolean>(false)
   const [questions, setQuestions] = useState<any[]>({
     scoring: [],
     gap: [],
@@ -238,11 +239,23 @@ export function BCDRDashboard() {
   const renderAssessmentComponent = () => {
     switch (activeAssessment) {
       case 'gap':
-        return <GapAnalysis questions={questions.gap} updateProgress={updateProgress} />;
+        return <GapAnalysis
+          questions={questions.gap}
+          updateProgress={updateProgress}
+          setIsActive={setIsActive}
+        />;
       case 'maturity':
-        return <MaturityAssessment questions={questions.maturity} updateProgress={updateProgress} />;
+        return <MaturityAssessment
+          questions={questions.maturity}
+          updateProgress={updateProgress}
+          setIsActive={setIsActive}
+        />;
       case 'scoring':
-        return <ResiliencyScoring questions={questions.scoring} updateProgress={updateProgress} />;
+        return <ResiliencyScoring
+          questions={questions.scoring}
+          updateProgress={updateProgress}
+          setIsActive={setIsActive}
+        />;
       default:
         return null; // Default to no component if none is selected
     }
@@ -303,7 +316,7 @@ export function BCDRDashboard() {
           </div>
         </div>
 
-        <div className='flex justify-center items-center mt-5'>
+        {!isActive && <div className='flex justify-center items-center mt-5'>
           <div className='text-center p-6 bg-white'>
             {/* Dynamically display assessment name and description based on assessmentIndex */}
             <h1 className='text-2xl font-bold text-gray-900 mb-4'>
@@ -315,12 +328,15 @@ export function BCDRDashboard() {
 
             {/* Button to start the assessment */}
             <button
-              onClick={() => { handleStartAssessment(ASSESSMENTS[assessmentIndex].id) }}
+              onClick={() => {
+                handleStartAssessment(ASSESSMENTS[assessmentIndex].id)
+                setIsActive(true)
+              }}
               className='bg-blue-500 text-white px-6 py-3 rounded-md text-sm font-medium shadow-md hover:bg-blue-600 transition duration-300'>
               Get Started
             </button>
           </div>
-        </div>
+        </div>}
 
         {/* Render the selected assessment dynamically */}
         {renderAssessmentComponent()}
