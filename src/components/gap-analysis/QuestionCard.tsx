@@ -84,14 +84,12 @@ export function QuestionCard({
               <span className="font-medium text-gray-900">
                 {question.question}
               </span>
+
               <button
-                onClick={onToggleHelp}
-                className="ml-2 text-gray-400 hover:text-gray-600"
-              >
-                <HelpCircle className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onToggleStandard}
+                onClick={() => {
+                  onToggleStandard()
+                  onToggleHelp()
+                }}
                 className="ml-2 text-indigo-400 hover:text-indigo-600"
               >
                 <Info className="w-4 h-4" />

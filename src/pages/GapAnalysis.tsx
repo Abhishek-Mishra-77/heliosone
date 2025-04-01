@@ -24,7 +24,9 @@ interface GapQuestion {
   question: string;
   description: string;
   type: "boolean" | "scale" | "text" | "date" | "multi_choice";
-  options: any;
+  options?: {
+    options: string[]; // options array with string elements for multi-choice type
+  };
   weight: number;
   order_index: number;
   standard_reference: {
@@ -35,19 +37,26 @@ interface GapQuestion {
   evidence_required: boolean;
   evidence_description: string;
   evidence_requirements: {
-    required_files: string[];
-    max_size_mb: number;
-    min_files: number;
-    max_files: number;
-    naming_convention: string;
+    required_files: string[]; // File types allowed
+    max_size_mb: number; // Max file size in MB
+    min_files: number; // Minimum number of files required
+    max_files: number; // Maximum number of files allowed
   };
   conditional_logic?: {
     dependsOn: string;
     condition: "equals" | "not_equals" | "greater_than" | "less_than";
     value: any;
   };
+  created_at: string;
+  updated_at: string;
+  resiliency_question_ref?: string | null;
+  archived_resiliency_question_id?: string | null;
 }
 
+// This is how you'd represent your questions array:
+interface GapQuestions {
+  questions: GapQuestion[];
+}
 interface QuestionResponse {
   value: any;
   evidence?: File[];
@@ -71,15 +80,14 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function GapAnalysis() {
+export function GapAnalysis({ questions }: { questions: GapQuestions['questions'] }) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [questions, setQuestions] = useState<Record<string, GapQuestion[]>>({});
   const [responses, setResponses] = useState<Record<string, QuestionResponse>>(
     {}
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState<any>(null);
@@ -93,62 +101,64 @@ export function GapAnalysis() {
     saveProgress,
   } = useAssessmentProgress("gap");
 
-  useEffect(() => {
-    if (organization?.id) {
-      fetchGapAnalysisData();
-    }
-  }, [organization?.id]);
+  console.log(questions)
 
-  const fetchGapAnalysisData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // useEffect(() => {
+  //   if (organization?.id) {
+  //     fetchGapAnalysisData();
+  //   }
+  // }, [organization?.id]);
 
-      // Check for existing assessment
-      const { data: assessment, error: assessmentError } = await supabase
-        .from("bcdr_assessments")
-        .select("*")
-        .eq("organization_id", organization?.id)
-        .eq("bcdr_assessment_type", "gap")
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .maybeSingle();
+  // const fetchGapAnalysisData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
 
-      if (assessmentError && assessmentError.code !== "PGRST116") {
-        throw assessmentError;
-      }
+  //     // Check for existing assessment
+  //     const { data: assessment, error: assessmentError } = await supabase
+  //       .from("bcdr_assessments")
+  //       .select("*")
+  //       .eq("organization_id", organization?.id)
+  //       .eq("bcdr_assessment_type", "gap")
+  //       .eq("status", "completed")
+  //       .order("created_at", { ascending: false })
+  //       .maybeSingle();
 
-      setExistingAssessment(assessment);
+  //     if (assessmentError && assessmentError.code !== "PGRST116") {
+  //       throw assessmentError;
+  //     }
 
-      const { data: categories, error: categoryError } = await supabase
-        .from("gap_analysis_categories")
-        .select("*")
-        .order("order_index");
+  //     setExistingAssessment(assessment);
 
-      if (categoryError) throw categoryError;
-      setCategories(categories || []);
+  //     const { data: categories, error: categoryError } = await supabase
+  //       .from("gap_analysis_categories")
+  //       .select("*")
+  //       .order("order_index");
 
-      if (categories?.length > 0) {
-        setActiveCategory(categories[0]);
+  //     if (categoryError) throw categoryError;
+  //     setCategories(categories || []);
 
-        const { data: questionData, error: questionError } = await supabase
-          .from("gap_analysis_questions")
-          .select("*")
-          .order("order_index");
+  //     if (categories?.length > 0) {
+  //       setActiveCategory(categories[0]);
 
-        if (questionError) throw questionError;
-        setQuestions(questionData);
-      }
-    } catch (error) {
-      console.error("Error fetching gap analysis data:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to load gap analysis"
-      );
-      window.toast?.error("Failed to load gap analysis");
-    } finally {
-      setLoading(false);
-    }
-  };
+  //       const { data: questionData, error: questionError } = await supabase
+  //         .from("gap_analysis_questions")
+  //         .select("*")
+  //         .order("order_index");
+
+  //       if (questionError) throw questionError;
+  //       setQuestions(questionData);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching gap analysis data:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to load gap analysis"
+  //     );
+  //     window.toast?.error("Failed to load gap analysis");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const startNewAssessment = async () => {
     try {

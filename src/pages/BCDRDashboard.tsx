@@ -17,9 +17,9 @@ import {
 import { useAuthStore } from '../lib/store'
 import { supabase } from '../lib/supabase'
 import clsx from 'clsx'
-import ResiliencyScoring from './ResiliencyScoring';
-import { MaturityAnalysis } from '../components/assessment-analysis/MaturityAnalysis';
-import GapAnalysis from './GapAnalysis';
+import { ResiliencyScoring } from '../pages/ResiliencyScoring'
+import { GapAnalysis } from '../pages/GapAnalysis'
+import { MaturityAssessment } from '../pages/MaturityAssessment'
 
 const MODULES = [
   {
@@ -78,6 +78,28 @@ const MODULES = [
   }
 ]
 
+// Define assessment steps dynamically
+const ASSESSMENTS = [
+  {
+    id: 'gap',
+    name: 'Gap Analysis',
+    description: 'Identify and assess gaps in your BCDR program based on industry standards',
+    component: <GapAnalysis />
+  },
+  {
+    id: 'maturity',
+    name: 'Maturity Assessment',
+    description: 'Evaluate your BCDR program capabilities based on industry standards',
+    component: <MaturityAssessment />
+  },
+  {
+    id: 'scoring',
+    name: 'Resiliency Scoring',
+    description: 'Evaluate your organization’s resilience capabilities based on industry standards',
+    component: <ResiliencyScoring />
+  }
+]
+
 interface DashboardStats {
   activeUsers: number
   criticalProcesses: number
@@ -92,11 +114,17 @@ export function BCDRDashboard() {
     criticalProcesses: 0,
     lastAssessment: null
   })
+  const [questions, setQuestions] = useState<any[]>({
+    scoring: [],
+    gap: [],
+    maturity: []
+  })
+  const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (organization?.id) {
-      fetchQuestionsData1()
+      fetchQuestionsData()
       fetchDashboardStats()
     }
   }, [organization?.id])
@@ -143,7 +171,7 @@ export function BCDRDashboard() {
     }
   }
 
-  const fetchQuestionsData1 = async () => {
+  const fetchQuestionsData = async () => {
     try {
       // Fetch the questions directly from the 'resiliency_questions' table
       const { data: ResiliencyQuestions, error: questionError1 } = await supabase
@@ -162,9 +190,11 @@ export function BCDRDashboard() {
         .select("*")
         .order("order_index");
       // Set the questions state
-      // console.log(ResiliencyQuestions , " ResiliencyQuestions")
-      // console.log(MaturityQuestions , " MaturityQuestions")
-      console.log(GapAnalysisQuestions, " GapAnalysisQuestions")
+      setQuestions({
+        scoring: ResiliencyQuestions || [],
+        gap: GapAnalysisQuestions || [],
+        maturity: MaturityQuestions || [],
+      });
     } catch (error) {
       console.error("Error fetching questions data:", error);
     };
@@ -174,125 +204,109 @@ export function BCDRDashboard() {
     navigate(route)
   }
 
+  const handleStartAssessment = (assessmentId: string) => {
+    setActiveAssessment(assessmentId); // Update state to start the assessment
+  };
+
+  const renderAssessmentComponent = () => {
+    switch (activeAssessment) {
+      case 'gap':
+        return <GapAnalysis questions={questions.gap} />;
+      case 'maturity':
+        return <MaturityAssessment questions={questions.maturity} />;
+      case 'scoring':
+        return <ResiliencyScoring questions={questions.scoring} />;
+      default:
+        return null; // Default to no component if none is selected
+    }
+  };
+
+
+  console.log(questions)
+
+
   return (
     <div className="space-y-6">
       {/* Organization Overview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Info Banner */}
+        <div className="bg-white border-2 border-blue-500 rounded-lg p-2 mb-6 shadow-lg justify-center">
+          <div className="flex  justify-between items-center space-x-4">
+            {/* Icon and Text Container */}
+            <div className="flex items-start space-x-3">
+              <Info className="w-6 h-6 text-blue-500" />
+              <div className="flex flex-col">
+                <p className="text-md text-gray-700">
+                  Select each process below to assess its potential impacts. All processes must be evaluated.
+                </p>
+              </div>
+            </div>
+            {/* Got it Button */}
+            <button className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium shadow-md hover:bg-blue-600">
+              Got it
+            </button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              BCDR Dashboard
-            </h1>
-            <p className="mt-1 text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900">
+              BCDR Assessment
+            </h2>
+            {/* <p className="mt-1 text-gray-600">
               {organization?.name}
+            </p> */}
+            <p>Review and analyze assessements results across all BCDR domains</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="sr-only">Steps</h2>
+          <div
+            className="relative after:absolute after:inset-x-0 after:top-1/2 after:block after:h-0.5 after:-translate-y-1/2 after:rounded-lg after:bg-gray-100"
+          >
+            <ol className="relative z-10 flex justify-between text-sm font-medium text-gray-500">
+              <li className="flex items-center gap-2 bg-white p-2">
+                <span className="size-6 rounded-full bg-gray-100 text-center text-[10px]/6 font-bold"> 1 </span>
+
+                <span className="hidden sm:block"> Gap Analysis </span>
+              </li>
+
+              <li className="flex items-center gap-2 bg-white p-2">
+                <span
+                  className="size-6 rounded-full bg-blue-600 text-center text-[10px]/6 font-bold text-white"
+                >
+                  2
+                </span>
+                <span className="hidden sm:block"> Maturity Assessment </span>
+              </li>
+
+              <li className="flex items-center gap-2 bg-white p-2">
+                <span className="size-6 rounded-full bg-gray-100 text-center text-[10px]/6 font-bold"> 3 </span>
+                <span className="hidden sm:block"> Resiliency Assessment </span>
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        <div className='flex justify-center items-center mt-10'>
+          <div className='text-center p-6 bg-white '>
+            <h1 className='text-2xl font-bold text-gray-900 mb-4'>Gap Analysis</h1>
+            <p className='text-md text-gray-600 mb-6'>
+              Identify and assess gaps in your BCDR program based on industry standards.
             </p>
+            <button
+              onClick={() => handleStartAssessment('gap')}
+              className='bg-blue-500 text-white px-6 py-3 rounded-md text-sm font-medium shadow-md hover:bg-blue-600 transition duration-300'>
+              Get Started
+            </button>
           </div>
         </div>
 
-        {/* Info Banner */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <Info className="w-5 h-5 text-gray-600 mt-0.5 mr-3" />
-            <div>
-              <h3 className="text-sm font-medium text-gray-900">Getting Started</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Complete the assessments to determine your organization's resilience score.
-                Start with Maturity Assessment, Gap Analysis, and Business Impact Analysis.
-              </p>
-            </div>
-          </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-sm text-gray-600 mb-1">
-              <Building2 className="w-4 h-4 mr-1" />
-              Critical Processes
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {loading ? '-' : stats.criticalProcesses}
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-sm text-gray-600 mb-1">
-              <Users className="w-4 h-4 mr-1" />
-              Active Users
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {loading ? '-' : stats.activeUsers}
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center text-sm text-gray-600 mb-1">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              Last Assessment
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {loading ? '-' : stats.lastAssessment ?
-                new Date(stats.lastAssessment).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric'
-                }) :
-                '-'
-              }
-            </div>
-          </div>
-        </div>
+        {/* Render the selected assessment dynamically */}
+        {renderAssessmentComponent()}
 
-        {/* Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MODULES.map(module => {
-            const Icon = module.icon
-            return (
-              <button
-                key={module.id}
-                onClick={() => handleModuleClick(module.id, module.route)}
-                disabled={!module.active}
-                className={clsx(
-                  "text-left p-6 rounded-lg border-2 transition-all duration-200",
-                  module.active
-                    ? "border-gray-200 hover:border-indigo-500 hover:shadow-md bg-white"
-                    : "border-gray-200 opacity-75 cursor-not-allowed"
-                )}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <Icon className="w-6 h-6 text-gray-600 mr-2" />
-                    <h2 className="text-xl font-semibold text-gray-900">{module.name}</h2>
-                  </div>
-                  {module.active && (
-                    <ArrowUpRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transform group-hover:translate-x-1" />
-                  )}
-                </div>
-                <p className="text-sm text-gray-600 mb-4">{module.description}</p>
-
-                {module.stats ? (
-                  <div className="mt-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-500">Score</div>
-                      <div className="text-2xl font-bold text-gray-900">{module.stats.score}%</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">Trend</div>
-                      <div className="text-sm font-medium text-gray-900">{module.stats.trend}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 text-sm text-gray-500">
-                    No assessments completed
-                  </div>
-                )}
-
-                {!module.active && (
-                  <div className="mt-4 text-sm text-gray-500">
-                    Coming soon
-                  </div>
-                )}
-              </button>
-            )
-          })}
-        </div>
       </div>
     </div>
   )

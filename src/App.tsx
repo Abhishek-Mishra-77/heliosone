@@ -1,4 +1,3 @@
-import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
 import { Layout } from './components/Layout'
@@ -6,9 +5,6 @@ import { Landing } from './pages/Landing'
 import { AuthPage } from './pages/Auth'
 import { ContinuousResilience } from './pages/ContinuousResilience'
 import { BCDRDashboard } from './pages/BCDRDashboard'
-import { ResiliencyScoring } from './pages/ResiliencyScoring'
-import { GapAnalysis } from './pages/GapAnalysis'
-import { MaturityAssessment } from './pages/MaturityAssessment'
 import { BusinessImpact } from './pages/BusinessImpact'
 import { BusinessImpactAnalysis } from './pages/BusinessImpactAnalysis'
 import { DepartmentLevels } from './pages/DepartmentLevels'
@@ -49,9 +45,6 @@ function App() {
 
                   {/* BCDR Module Routes */}
                   <Route path="/bcdr" element={<BCDRDashboard />} />
-                  <Route path="/bcdr/scoring" element={<ResiliencyScoring />} />
-                  <Route path="/bcdr/gap-analysis" element={<GapAnalysis />} />
-                  <Route path="/bcdr/maturity" element={<MaturityAssessment />} />
                   <Route path="/bcdr/business-impact" element={<BusinessImpact />} />
                   <Route path="/bcdr/business-impact/analysis" element={<BusinessImpactAnalysis />} />
                   <Route path="/bcdr/departments" element={<DepartmentLevels />} />

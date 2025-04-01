@@ -61,7 +61,7 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function MaturityAssessment() {
+export function MaturityAssessment({ questions: initialQuestions }: any) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
