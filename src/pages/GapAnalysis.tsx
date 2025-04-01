@@ -54,8 +54,9 @@ interface GapQuestion {
 }
 
 // This is how you'd represent your questions array:
-interface GapQuestions {
-  questions: GapQuestion[];
+interface GapAnalysisProps {
+  questions: GapQuestion[],
+  updateProgress: (completed: number, total: number) => void
 }
 
 interface QuestionResponse {
@@ -82,7 +83,8 @@ const INDUSTRY_STANDARDS = [
   },
 ];
 
-export function GapAnalysis({ questions }: { questions: GapQuestions['questions'] }) {
+
+export function GapAnalysis({ questions, updateProgress }: GapAnalysisProps) {
   const { organization, profile } = useAuthStore();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
@@ -216,6 +218,9 @@ export function GapAnalysis({ questions }: { questions: GapQuestions['questions'
 
       return newResponses;
     });
+
+    updateProgress('gap', Object.keys(responses).length)
+
   };
 
   const saveAssessment = async () => {

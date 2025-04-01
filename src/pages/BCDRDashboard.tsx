@@ -21,6 +21,12 @@ import { ResiliencyScoring } from '../pages/ResiliencyScoring'
 import { GapAnalysis } from '../pages/GapAnalysis'
 import { MaturityAssessment } from '../pages/MaturityAssessment'
 
+interface AssessmentProgress {
+  total: number;
+  completed: number;
+}
+
+
 const MODULES = [
   {
     id: 'scoring',
@@ -84,19 +90,16 @@ const ASSESSMENTS = [
     id: 'gap',
     name: 'Gap Analysis',
     description: 'Identify and assess gaps in your BCDR program based on industry standards',
-    component: <GapAnalysis />
   },
   {
     id: 'maturity',
     name: 'Maturity Assessment',
     description: 'Evaluate your BCDR program capabilities based on industry standards',
-    component: <MaturityAssessment />
   },
   {
     id: 'scoring',
     name: 'Resiliency Scoring',
     description: 'Evaluate your organization’s resilience capabilities based on industry standards',
-    component: <ResiliencyScoring />
   }
 ]
 
@@ -114,11 +117,17 @@ export function BCDRDashboard() {
     criticalProcesses: 0,
     lastAssessment: null
   })
+  const [assessmentIndex, setAssessmentIndex] = useState<number>(0)
   const [questions, setQuestions] = useState<any[]>({
     scoring: [],
     gap: [],
     maturity: []
   })
+  const [progress, setProgress] = useState<{ [key: string]: AssessmentProgress }>({
+    scoring: { total: 0, completed: 0 },
+    gap: { total: 0, completed: 0 },
+    maturity: { total: 0, completed: 0 }
+  });
   const [activeAssessment, setActiveAssessment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true)
 
@@ -195,6 +204,13 @@ export function BCDRDashboard() {
         gap: GapAnalysisQuestions || [],
         maturity: MaturityQuestions || [],
       });
+
+      setProgress({
+        scoring: { total: scoringQuestions?.length || 0, completed: 0 },
+        gap: { total: gapQuestions?.length || 0, completed: 0 },
+        maturity: { total: maturityQuestions?.length || 0, completed: 0 }
+      });
+
     } catch (error) {
       console.error("Error fetching questions data:", error);
     };
@@ -208,20 +224,30 @@ export function BCDRDashboard() {
     setActiveAssessment(assessmentId); // Update state to start the assessment
   };
 
+  // Update progress when a question is answered
+  const updateProgress = (assessmentId: string, completedCount: number) => {
+    setProgress((prev) => ({
+      ...prev,
+      [assessmentId]: {
+        ...prev[assessmentId],
+        completed: completedCount
+      }
+    }));
+  };
+
   const renderAssessmentComponent = () => {
     switch (activeAssessment) {
       case 'gap':
-        return <GapAnalysis questions={questions.gap} />;
+        return <GapAnalysis questions={questions.gap} updateProgress={updateProgress} />;
       case 'maturity':
-        return <MaturityAssessment questions={questions.maturity} />;
+        return <MaturityAssessment questions={questions.maturity} updateProgress={updateProgress} />;
       case 'scoring':
-        return <ResiliencyScoring questions={questions.scoring} />;
+        return <ResiliencyScoring questions={questions.scoring} updateProgress={updateProgress} />;
       default:
         return null; // Default to no component if none is selected
     }
   };
 
-  console.log(questions)
 
   return (
     <div className="space-y-6">
@@ -261,43 +287,40 @@ export function BCDRDashboard() {
             className="relative after:absolute after:inset-x-0 after:top-1/2 after:block after:h-0.5 after:-translate-y-1/2 after:rounded-lg after:bg-gray-100"
           >
             <ol className="relative z-10 flex justify-between text-sm font-medium text-gray-500">
-              <li className="flex items-center gap-2 bg-white p-2">
-                <span className="size-6 rounded-full bg-gray-100 text-center text-[10px]/6 font-bold"> 1 </span>
-
-                <span className="hidden sm:block"> Gap Analysis </span>
-              </li>
-
-              <li className="flex items-center gap-2 bg-white p-2">
-                <span
-                  className="size-6 rounded-full bg-blue-600 text-center text-[10px]/6 font-bold text-white"
-                >
-                  2
-                </span>
-                <span className="hidden sm:block"> Maturity Assessment </span>
-              </li>
-
-              <li className="flex items-center gap-2 bg-white p-2">
-                <span className="size-6 rounded-full bg-gray-100 text-center text-[10px]/6 font-bold"> 3 </span>
-                <span className="hidden sm:block"> Resiliency Assessment </span>
-              </li>
+              {ASSESSMENTS.map((assessment, i) => (
+                <li className="flex items-center gap-2 bg-white p-2">
+                  <span
+                    className={`size-6 rounded-full text-center text-[10px]/6 font-bold
+    ${i === assessmentIndex ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}
+  `}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="hidden sm:block"> {assessment.name} </span>
+                </li>
+              ))}
             </ol>
           </div>
         </div>
 
         <div className='flex justify-center items-center mt-5'>
-          <div className='text-center p-6 bg-white '>
-            <h1 className='text-2xl font-bold text-gray-900 mb-4'>Gap Analysis</h1>
+          <div className='text-center p-6 bg-white'>
+            {/* Dynamically display assessment name and description based on assessmentIndex */}
+            <h1 className='text-2xl font-bold text-gray-900 mb-4'>
+              {ASSESSMENTS[assessmentIndex].name}
+            </h1>
             <p className='text-md text-gray-600 mb-6'>
-              Identify and assess gaps in your BCDR program based on industry standards.
+              {ASSESSMENTS[assessmentIndex].description}
             </p>
+
+            {/* Button to start the assessment */}
             <button
-              onClick={() => handleStartAssessment('scoring')}
+              onClick={() => { handleStartAssessment(ASSESSMENTS[assessmentIndex].id) }}
               className='bg-blue-500 text-white px-6 py-3 rounded-md text-sm font-medium shadow-md hover:bg-blue-600 transition duration-300'>
               Get Started
             </button>
           </div>
         </div>
-
 
         {/* Render the selected assessment dynamically */}
         {renderAssessmentComponent()}
